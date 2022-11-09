@@ -6,6 +6,7 @@ import sys
 
 # Read Images
 image, original_image = [], []
+checking_image = []
 relative_path = "image200.jpg"
 
 # Lists to store the bounding box coordinates
@@ -15,55 +16,55 @@ parab_first_point, parab_second_point = (), ()
 
 
 # ------------------------------Cubic Interpolation------------------------------
-# def getBicPixelChannel(img, x, y, channel):
-#     if (x < img.shape[1]) and (y < img.shape[0]):
-#         return img[y, x, channel]
-#     return 0
-#
-#
-# def Bicubic(img, rate):
-#     new_w = int(math.ceil(float(img.shape[1]) * rate))
-#     new_h = int(math.ceil(float(img.shape[0]) * rate))
-#
-#     new_img = np.zeros((new_w, new_h, 3))
-#
-#     x_rate = float(img.shape[1]) / new_img.shape[1]
-#     y_rate = float(img.shape[0]) / new_img.shape[0]
-#
-#     C = np.zeros(5)
-#
-#     for hi in range(new_img.shape[0]):
-#         for wi in range(new_img.shape[1]):
-#
-#             x_int = int(wi * x_rate)
-#             y_int = int(hi * y_rate)
-#
-#             dx = x_rate * wi - x_int
-#             dy = y_rate * hi - y_int
-#
-#             for channel in range(new_img.shape[2]):
-#                 for jj in range(0, 4):
-#                     o_y = y_int - 1 + jj
-#                     a0 = getBicPixelChannel(img, x_int, o_y, channel)
-#                     d0 = getBicPixelChannel(img, x_int - 1, o_y, channel) - a0
-#                     d2 = getBicPixelChannel(img, x_int + 1, o_y, channel) - a0
-#                     d3 = getBicPixelChannel(img, x_int + 2, o_y, channel) - a0
-#
-#                     a1 = -1. / 3 * d0 + d2 - 1. / 6 * d3
-#                     a2 = 1. / 2 * d0 + 1. / 2 * d2
-#                     a3 = -1. / 6 * d0 - 1. / 2 * d2 + 1. / 6 * d3
-#                     C[jj] = a0 + a1 * dx + a2 * dx * dx + a3 * dx * dx * dx
-#
-#                 d0 = C[0] - C[1]
-#                 d2 = C[2] - C[1]
-#                 d3 = C[3] - C[1]
-#                 a0 = C[1]
-#                 a1 = -1. / 3 * d0 + d2 - 1. / 6 * d3
-#                 a2 = 1. / 2 * d0 + 1. / 2 * d2
-#                 a3 = -1. / 6 * d0 - 1. / 2 * d2 + 1. / 6 * d3
-#                 new_img[hi, wi, channel] = a0 + a1 * dy + a2 * dy * dy + a3 * dy * dy * dy
-#
-#     return new_img
+def getBicPixelChannel(img, x, y, channel):
+    if (x < img.shape[1]) and (y < img.shape[0]):
+        return img[y, x, channel]
+    return 0
+
+
+def Bicubic(img, rate):
+    new_w = int(math.ceil(float(img.shape[1]) * rate))
+    new_h = int(math.ceil(float(img.shape[0]) * rate))
+
+    new_img = np.zeros((new_w, new_h, 3))
+
+    x_rate = float(img.shape[1]) / new_img.shape[1]
+    y_rate = float(img.shape[0]) / new_img.shape[0]
+
+    C = np.zeros(5)
+
+    for hi in range(new_img.shape[0]):
+        for wi in range(new_img.shape[1]):
+
+            x_int = int(wi * x_rate)
+            y_int = int(hi * y_rate)
+
+            dx = int(x_rate * wi - x_int)
+            dy = int(y_rate * hi - y_int)
+
+            for channel in range(new_img.shape[2]):
+                for jj in range(0, 4):
+                    o_y = int(y_int - 1 + jj)
+                    a0 = int(getBicPixelChannel(img, x_int, o_y, channel))
+                    d0 = int(getBicPixelChannel(img, x_int - 1, o_y, channel) - a0)
+                    d2 = int(getBicPixelChannel(img, x_int + 1, o_y, channel) - a0)
+                    d3 = int(getBicPixelChannel(img, x_int + 2, o_y, channel) - a0)
+
+                    a1 = -1. / 3 * d0 + d2 - 1. / 6 * d3
+                    a2 = 1. / 2 * d0 + 1. / 2 * d2
+                    a3 = -1. / 6 * d0 - 1. / 2 * d2 + 1. / 6 * d3
+                    C[jj] = a0 + a1 * dx + a2 * dx * dx + a3 * dx * dx * dx
+
+                d0 = C[0] - C[1]
+                d2 = C[2] - C[1]
+                d3 = C[3] - C[1]
+                a0 = C[1]
+                a1 = -1. / 3 * d0 + d2 - 1. / 6 * d3
+                a2 = 1. / 2 * d0 + 1. / 2 * d2
+                a3 = -1. / 6 * d0 - 1. / 2 * d2 + 1. / 6 * d3
+                new_img[hi, wi, channel] = a0 + a1 * dy + a2 * dy * dy + a3 * dy * dy * dy
+
+    return new_img
 
 
 # ------------------------------Nearest neighbor Interpolation------------------------------
@@ -232,13 +233,13 @@ def compute_cropped_area(vertex):
     new_image_biliniar = np.concatenate((resized_left_half_bilinear, resized_right_half_bilinear), axis=1)
 
     # Cubic
-    # resized_left_half_BC = resize(cropped_left_half, new_width_left, new_height, interpolation='cubic')
+    # resized_left_half_BC = resize(checking_image, new_width_left, new_height, interpolation='cubic')
     # resized_right_half_BC = resize(cropped_right_half, new_height, new_width_right, interpolation='cubic')
     # new_image_BC = np.concatenate((resized_left_half_BC, resized_right_half_BC), axis=1)
 
     cv2.imshow("Bilinear", new_image_biliniar)
     cv2.imshow("Nearest Neighbor", new_image_NN)
-    # cv2.imshow("Cubic", new_image_BC)
+    # cv2.imshow("Cubic", resized_left_half_BC)
 
 
 # function which will be called on mouse input
@@ -267,9 +268,10 @@ def click_handler(action, x, y, flags, *userdata):
 
 
 def load_image():
-    global image, relative_path, original_image
+    global image, relative_path, original_image, checking_image
     image = cv2.imread(relative_path, cv2.IMREAD_GRAYSCALE)
     original_image = cv2.imread(relative_path, cv2.IMREAD_GRAYSCALE)
+    checking_image = cv2.imread(relative_path, cv2.IMREAD_COLOR)
 
 
 def display_window():
