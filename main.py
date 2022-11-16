@@ -137,48 +137,38 @@ def bilinear_my_way(original_img, new_h, new_w):
     return resized.astype(np.uint8)
 
 
-def bl_resize(original_img, new_h, new_w):
-    # get dimensions of original image
-    old_h, old_w, c = original_img.shape
-    # create an array of the desired shape.
-    # We will fill-in the values later.
-    resized = np.zeros((new_h, new_w, c))
-    # Calculate horizontal and vertical scaling factor
-    w_scale_factor = (old_w) / (new_w) if new_h != 0 else 0
-    h_scale_factor = (old_h) / (new_h) if new_w != 0 else 0
-    for i in range(new_h):
-        for j in range(new_w):
-            # map the coordinates back to the original image
-            x = i * h_scale_factor
-            y = j * w_scale_factor
-            # calculate the coordinate values for 4 surrounding pixels.
-            x_floor = math.floor(x)
-            x_ceil = min(old_h - 1, math.ceil(x))
-            y_floor = math.floor(y)
-            y_ceil = min(old_w - 1, math.ceil(y))
+def bilinear_pixel_val(original_img, x, y):
+    old_h, old_w = original_img.shape[:2]
+    # calculate the coordinate values for 4 (2x2) surrounding pixels.
+    x_floor = math.floor(x)
+    y_floor = math.floor(y)
+    ##ensure that its value remains in the range (0 to old_h-1) and (0 to old_w-1)
+    x_ceil = min(old_h - 1, math.ceil(x))
+    y_ceil = min(old_w - 1, math.ceil(y))
 
-            if (x_ceil == x_floor) and (y_ceil == y_floor):
-                q = original_img[int(x), int(y), :]
-            elif (x_ceil == x_floor):
-                q1 = original_img[int(x), int(y_floor), :]
-                q2 = original_img[int(x), int(y_ceil), :]
-                q = q1 * (y_ceil - y) + q2 * (y - y_floor)
-            elif (y_ceil == y_floor):
-                q1 = original_img[int(x_floor), int(y), :]
-                q2 = original_img[int(x_ceil), int(y), :]
-                q = (q1 * (x_ceil - x)) + (q2 * (x - x_floor))
-            else:
-                v1 = original_img[x_floor, y_floor, :]
-                v2 = original_img[x_ceil, y_floor, :]
-                v3 = original_img[x_floor, y_ceil, :]
-                v4 = original_img[x_ceil, y_ceil, :]
+    if (x_ceil == x_floor) and (y_ceil == y_floor):
+        q = original_img[int(x), int(y)]
+    elif (x_ceil == x_floor):
+        q1 = original_img[int(x), int(y_floor)]
+        q2 = original_img[int(x), int(y_ceil)]
+        # relative distance of q1 from (x,y) +relative distance of q2 from (x,y)
+        q = (q1 * (y_ceil - y)) + (q2 * (y - y_floor))
+    elif (y_ceil == y_floor):
+        q1 = original_img[int(x_floor), int(y)]
+        q2 = original_img[int(x_ceil), int(y)]
+        # relative distance of q1 from (x,y) +relative distance of q2 from (x,y)
+        q = (q1 * (x_ceil - x)) + (q2 * (x - x_floor))
+    else:
+        v1 = original_img[x_floor, y_floor]
+        v2 = original_img[x_ceil, y_floor]
+        v3 = original_img[x_floor, y_ceil]
+        v4 = original_img[x_ceil, y_ceil]
 
-                q1 = v1 * (x_ceil - x) + v2 * (x - x_floor)
-                q2 = v3 * (x_ceil - x) + v4 * (x - x_floor)
-                q = q1 * (y_ceil - y) + q2 * (y - y_floor)
+        q1 = v1 * (x_ceil - x) + v2 * (x - x_floor)
+        q2 = v3 * (x_ceil - x) + v4 * (x - x_floor)
+        q = q1 * (y_ceil - y) + q2 * (y - y_floor)
 
-            resized[i, j, :] = q
-    return resized.astype(np.uint8)
+    return q
 
 
 def bilinear_pixel(image, y, x):
@@ -297,20 +287,6 @@ def draw_parabola(parab_clicked_point_x, parab_clicked_point_y):
         return None
 
 
-def draw_half_circle(clicked_point_x, clicked_point_y):
-    point1 = np.array((parab_first_point[0], 0.5 * (parab_first_point[1] + parab_second_point[1])))
-    point2 = np.array((clicked_point_x, clicked_point_y))
-    center = (parab_first_point[0], round(0.5 * (parab_first_point[1] + parab_second_point[1])))
-    radius = round(np.linalg.norm(point1 - point2))
-    axes = (radius, radius)
-    angle = 270
-    startAngle = 0
-    endAngle = 180
-
-    cv2.ellipse(image, center, axes, angle, startAngle, endAngle, (0, 0, 0), 3)
-    cv2.imshow("Assignment 1", image)
-
-
 def compute_cropped_area(vertex):
     global top_left_corner, bottom_right_corner, parab_first_point, parab_second_point, original_image, parab_coeffs
     # Example: cropped = img[start_row:end_row, start_col:end_col]
@@ -350,6 +326,30 @@ def compute_cropped_area(vertex):
     # cv2.imshow("Cubic", resized_left_half_BC)
 
 
+# def new_deformat(img):
+#     col, row = img.shape[:2]
+#     scaled_image = np.zeros((col, row), image.dtype)
+#     rect_half_width = 0.5 * (bottom_right_corner[0][0] - top_left_corner[0][0])
+#     rect_half_x = round((bottom_right_corner[0][0] + top_left_corner[0][0]) / 2)
+#
+#     for y in range(top_left_corner[0][1], bottom_right_corner[0][1]):
+#         parab_x = poly(y)
+#         relative_left_parab_x = parab_x - top_left_corner[0][0]
+#         relative_right_parab_x = parab_x - rect_half_x
+#         for x in range(top_left_corner[0][0], bottom_right_corner[0][0]):
+#             if x <= rect_half_x:
+#                 relative_x = x - top_left_corner[0][0]
+#                 x_scale = relative_x / rect_half_width
+#                 delta = round(relative_left_parab_x * x_scale)
+#                 scaled_image[y - col, top_left_corner[0][0] + delta - row] = img[y, x]
+#             else:
+#                 relative_x = (x - rect_half_x)
+#                 x_scale = 1 - (relative_x / rect_half_width)
+#                 delta = round((rect_half_width - relative_right_parab_x) * (x_scale))
+#                 scaled_image[y - col, bottom_right_corner[0][0] - delta - row] = img[y, x]
+#     cv2.imshow("Assignment 2", scaled_image)
+#     cv2.waitKey(0)
+
 def new_deformat(img):
     col, row = img.shape[:2]
     scaled_image = np.zeros((col, row), image.dtype)
@@ -369,9 +369,47 @@ def new_deformat(img):
             else:
                 relative_x = (x - rect_half_x)
                 x_scale = 1 - (relative_x / rect_half_width)
-                #
                 delta = round((rect_half_width - relative_right_parab_x) * (x_scale))
                 scaled_image[y - col, bottom_right_corner[0][0] - delta - row] = img[y, x]
+    cv2.imshow("Assignment 2", scaled_image)
+    cv2.waitKey(0)
+
+
+def inverse_transformation(img):
+    global top_left_corner, bottom_right_corner
+    width, height = img.shape[:2]
+    scaled_image = np.zeros((width, height), image.dtype)
+    rect_half_width = 0.5 * (bottom_right_corner[0][0] - top_left_corner[0][0])
+    rect_half_x = round((bottom_right_corner[0][0] + top_left_corner[0][0]) / 2)
+
+    count = 0
+    print("top left pixel: ", top_left_corner[0])
+    print("rect half x: ", rect_half_x)
+    for j in range(height):
+        parab_x = poly(j)
+        relative_left_parab_x = parab_x - top_left_corner[0][0]
+        relative_right_parab_x = parab_x - rect_half_x
+        for i in range(width):
+            # if the pixel in rect range copmute
+            if top_left_corner[0][0] <= j <= bottom_right_corner[0][0] \
+                    and top_left_corner[0][1] <= i <= bottom_right_corner[0][1]:
+                # print((i, j))
+                # x vals up to rect medial line
+                if j <= rect_half_x:
+                    #  need to compute the x right way!!!!!!!!!!!!
+                    x = top_left_corner[0][0] + ((i * rect_half_width) / relative_left_parab_x)
+
+                    scaled_image[i, j] = bilinear_pixel_val(img, x, j)
+                    # scaled_image[i, j] = 0XAA
+                # x vals from rect medial line
+                else:
+                    y = None
+                    x = None
+                    # scaled_image[i, j]=bilinear_pixel(img,y,x)
+
+            # if the pixel is not in rect range take the value from original image
+            else:
+                scaled_image[i, j] = img[i, j]
     cv2.imshow("Assignment 2", scaled_image)
     cv2.waitKey(0)
 
@@ -485,7 +523,7 @@ if __name__ == '__main__':
         # cv2.imshow("My way", x)
         # cv2.imshow("other", y)
         # cv2.waitKey(0)
-        new_deformat(original_image)
+        inverse_transformation(original_image)
         # print(x)
 
         # x = cubic_interpolation(image, (1, 1.2))
