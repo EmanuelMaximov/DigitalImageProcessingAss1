@@ -382,24 +382,23 @@ def inverse_transformation(img):
     rect_half_width = 0.5 * (bottom_right_corner[0][0] - top_left_corner[0][0])
     rect_half_x = round((bottom_right_corner[0][0] + top_left_corner[0][0]) / 2)
 
-    count = 0
-    print("top left pixel: ", top_left_corner[0])
-    print("rect half x: ", rect_half_x)
+    # print("top left pixel: ", top_left_corner[0])
+    # print("rect half x: ", rect_half_x)
     for j in range(height):
-        parab_x = poly(j)
-        relative_left_parab_x = parab_x - top_left_corner[0][0]
-        relative_right_parab_x = parab_x - rect_half_x
         for i in range(width):
+            parab_x = poly(i)
+            relative_left_parab_x = parab_x - top_left_corner[0][0]
+            relative_right_parab_x = parab_x - rect_half_x
             # if the pixel in rect range copmute
             if top_left_corner[0][0] <= j <= bottom_right_corner[0][0] \
                     and top_left_corner[0][1] <= i <= bottom_right_corner[0][1]:
-                # print((i, j))
                 # x vals up to rect medial line
-                if j <= rect_half_x:
-                    #  need to compute the x right way!!!!!!!!!!!!
-                    x = top_left_corner[0][0] + ((i * rect_half_width) / relative_left_parab_x)
-
-                    scaled_image[i, j] = bilinear_pixel_val(img, x, j)
+                if j <= parab_x:
+                    x = (((j - top_left_corner[0][0]) / relative_left_parab_x) * rect_half_width) + top_left_corner[0][
+                        0]
+                    y = i
+                    print("(i,j): ", (i, j), "=> (y,x): ", (y, x))
+                    scaled_image[i, j] = bilinear_pixel_val(img, y, x)
                     # scaled_image[i, j] = 0XAA
                 # x vals from rect medial line
                 else:
