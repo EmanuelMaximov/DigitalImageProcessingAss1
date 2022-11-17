@@ -13,46 +13,12 @@ relative_path = "image200.jpg"
 top_left_corner, bottom_right_corner = [], []
 top_left_corner_button, bottom_right_corner_button, parab_point_button = False, False, False
 parab_first_point, parab_second_point = (), ()
-poly = None
+parabola_func = None
+vertex = None
 
 
 # ------------------------------Cubic Interpolation------------------------------
-# def cubic_pixel_val(original_img, x, y):
-#     rows, cols = original_img.shape
-#
-#     x_ratio = float(cols / scaled_weight)
-#     y_ratio = float(rows / scaled_height)
-#
-#     C = np.zeros(5)
-#     x_int = int(j * x_ratio)
-#     y_int = int(i * y_ratio)
-#
-#     dx = x_ratio * j - x_int
-#     dy = y_ratio * i - y_int
-#
-#     for jj in range(0, 4):
-#         o_y = y_int - 1 + jj
-#         a0 = getBicPixel(image, x_int, o_y)
-#         d0 = getBicPixel(image, x_int - 1, o_y) - a0
-#         d2 = getBicPixel(image, x_int + 1, o_y) - a0
-#         d3 = getBicPixel(image, x_int + 2, o_y) - a0
-#
-#         a1 = -1. / 3 * d0 + d2 - 1. / 6 * d3
-#         a2 = 1. / 2 * d0 + 1. / 2 * d2
-#         a3 = -1. / 6 * d0 - 1. / 2 * d2 + 1. / 6 * d3
-#         C[jj] = a0 + a1 * dx + a2 * dx * dx + a3 * dx * dx * dx
-#
-#     d0 = C[0] - C[1]
-#     d2 = C[2] - C[1]
-#     d3 = C[3] - C[1]
-#     a0 = C[1]
-#     a1 = -1. / 3 * d0 + d2 - 1. / 6 * d3
-#     a2 = 1. / 2 * d0 + 1. / 2 * d2
-#     a3 = -1. / 6 * d0 - 1. / 2 * d2 + 1. / 6 * d3
-#     val = a0 + a1 * dy + a2 * dy * dy + a3 * dy * dy * dy
-#     return val
-
-def cubicEquationSolver(d, a):
+def cubic_equation_solver(d, a):
     d = abs(d)
     if 0.0 <= d <= 1.0:
         score = (a + 2.0) * pow(d, 3.0) - ((a + 3.0) * pow(d, 2.0)) + 1.0
@@ -64,78 +30,23 @@ def cubicEquationSolver(d, a):
         return 0.0
 
 
-def Cubic_Interpolation(img, x, y):
+def cubic_interpolation(img, x, y):
     newX = x
     newY = y
     dx = abs(newX - round(newX))
     dy = abs(newY - round(newY))
-    sumCubicGrayValue = 0
-    # if math.floor(newX) - 1  < 0 or math.floor(newX) + 2  > src.cols - 1 or math.floor(newY) < 0 or math.floor(newY)  > src.rows - 1:
-    #     dst[dstPixel] = 0
-    # else:
-    for cNeighbor in range(-1, 3):
-        for rNeighbor in range(-1, 3):
-            CaX = cubicEquationSolver(rNeighbor + dx, -0.5)
-            CaY = cubicEquationSolver(cNeighbor + dy, -0.5)
-            sumCubicGrayValue = sumCubicGrayValue + img[(round(newX) + rNeighbor, cNeighbor + round(newY))] * CaX * CaY
+    sum_value = 0
+    for c_neighbor in range(-1, 3):
+        for r_neighbor in range(-1, 3):
+            CaX = cubic_equation_solver(r_neighbor + dx, -0.5)
+            CaY = cubic_equation_solver(c_neighbor + dy, -0.5)
+            sum_value = sum_value + img[(round(newX) + r_neighbor, c_neighbor + round(newY))] * CaX * CaY
 
-    if sumCubicGrayValue > 255:
-        sumCubicGrayValue = 255
-    elif sumCubicGrayValue < 0:
-        sumCubicGrayValue = 0
-    return sumCubicGrayValue
-
-
-def getBicPixel(img, x, y):
-    if (x < img.shape[1]) and (y < img.shape[0]):
-        return img[y, x] & 0xFF
-
-    return 0
-
-
-#
-# def cubic_interpolation(img, scale_factor):
-#     rows, cols = img.shape
-#     scaled_height = int(math.ceil(float(rows * scale_factor[0])))
-#     scaled_weight = int(math.ceil(float(cols * scale_factor[1])))
-#
-#     scaled_image = np.zeros((scaled_weight, scaled_height), np.uint8)
-#
-#     x_ratio = float(cols / scaled_weight)
-#     y_ratio = float(rows / scaled_height)
-#
-#     C = np.zeros(5)
-#
-#     for i in range(0, scaled_height):
-#         for j in range(0, scaled_weight):
-#
-#             x_int = int(j * x_ratio)
-#             y_int = int(i * y_ratio)
-#
-#             dx = x_ratio * j - x_int
-#             dy = y_ratio * i - y_int
-#
-#             for jj in range(0, 4):
-#                 o_y = y_int - 1 + jj
-#                 a0 = getBicPixel(image, x_int, o_y)
-#                 d0 = getBicPixel(image, x_int - 1, o_y) - a0
-#                 d2 = getBicPixel(image, x_int + 1, o_y) - a0
-#                 d3 = getBicPixel(image, x_int + 2, o_y) - a0
-#
-#                 a1 = -1. / 3 * d0 + d2 - 1. / 6 * d3
-#                 a2 = 1. / 2 * d0 + 1. / 2 * d2
-#                 a3 = -1. / 6 * d0 - 1. / 2 * d2 + 1. / 6 * d3
-#                 C[jj] = a0 + a1 * dx + a2 * dx * dx + a3 * dx * dx * dx
-#
-#             d0 = C[0] - C[1]
-#             d2 = C[2] - C[1]
-#             d3 = C[3] - C[1]
-#             a0 = C[1]
-#             a1 = -1. / 3 * d0 + d2 - 1. / 6 * d3
-#             a2 = 1. / 2 * d0 + 1. / 2 * d2
-#             a3 = -1. / 6 * d0 - 1. / 2 * d2 + 1. / 6 * d3
-#             scaled_image[j, i] = a0 + a1 * dy + a2 * dy * dy + a3 * dy * dy * dy
-#     return scaled_image
+    if sum_value > 255:
+        sum_value = 255
+    elif sum_value < 0:
+        sum_value = 0
+    return sum_value
 
 
 # ------------------------------Nearest neighbor Interpolation------------------------------
@@ -149,18 +60,18 @@ def bilinear_interpolation(original_img, x, y):
     # calculate the coordinate values for 4 (2x2) surrounding pixels.
     x_floor = math.floor(x)
     y_floor = math.floor(y)
-    ##ensure that its value remains in the range (0 to old_h-1) and (0 to old_w-1)
+    # ensure that its value remains in the range (0 to old_h-1) and (0 to old_w-1)
     x_ceil = min(old_h - 1, math.ceil(x))
     y_ceil = min(old_w - 1, math.ceil(y))
 
     if (x_ceil == x_floor) and (y_ceil == y_floor):
         q = original_img[int(x), int(y)]
-    elif (x_ceil == x_floor):
+    elif x_ceil == x_floor:
         q1 = original_img[int(x), int(y_floor)]
         q2 = original_img[int(x), int(y_ceil)]
         # relative distance of q1 from (x,y) +relative distance of q2 from (x,y)
         q = (q1 * (y_ceil - y)) + (q2 * (y - y_floor))
-    elif (y_ceil == y_floor):
+    elif y_ceil == y_floor:
         q1 = original_img[int(x_floor), int(y)]
         q2 = original_img[int(x_ceil), int(y)]
         # relative distance of q1 from (x,y) +relative distance of q2 from (x,y)
@@ -178,22 +89,11 @@ def bilinear_interpolation(original_img, x, y):
     return q
 
 
-def get_interpolation(interpolation=None):
-    if interpolation == 'nearest_neighbor':
-        return nearest_neighbor_interpolation
-
-    elif interpolation == 'bilinear':
-        return bilinear_interpolation
-
-    # elif interpolation == 'cubic':
-    #     # return cv2.resize(img, (new_height, new_width), interpolation=cv2.INTER_CUBIC)
-    #     return cubic_interpolation(img, (1.2, 1.2))
-
-
 def draw_rectangle():
     global parab_first_point, parab_second_point
     # Draw the rectangle
-    cv2.rectangle(image, top_left_corner[0], bottom_right_corner[0], (0, 0, 0), 2, 8)
+    cv2.rectangle(image, top_left_corner[0], bottom_right_corner[0], (255, 255, 255), 2, 8)
+    cv2.rectangle(original_image, top_left_corner[0], bottom_right_corner[0], (255, 255, 255), 2, 8)
 
     # Compute Medial Line
     distance = bottom_right_corner[0][0] - top_left_corner[0][0]
@@ -203,11 +103,12 @@ def draw_rectangle():
 
     # Draw Medial line
     cv2.line(image, parab_first_point, parab_second_point, (0, 0, 0), 2)
+    cv2.line(original_image, parab_first_point, parab_second_point, (0, 0, 0), 2)
     cv2.imshow("Assignment 1", image)
 
 
 def draw_parabola(parab_clicked_point_x, parab_clicked_point_y):
-    global parab_point_button, poly, parab_first_point, parab_second_point
+    global parab_point_button, parabola_func, parab_first_point, parab_second_point
     pts = np.array([[parab_first_point[0], parab_first_point[1]],
                     [parab_clicked_point_x, parab_clicked_point_y],
                     [parab_second_point[0], parab_second_point[1]]], np.int32)
@@ -215,10 +116,10 @@ def draw_parabola(parab_clicked_point_x, parab_clicked_point_y):
     # side parabola coeffs
     coeffs = np.polyfit(pts[:, 1], pts[:, 0], 2)
 
-    poly = np.poly1d(coeffs)
+    parabola_func = np.poly1d(coeffs)
 
     yarr = np.arange(parab_first_point[1], parab_second_point[1])
-    xarr = poly(yarr)
+    xarr = parabola_func(yarr)
 
     parab_pts = np.array([xarr, yarr], dtype=np.int32).T
 
@@ -232,7 +133,7 @@ def draw_parabola(parab_clicked_point_x, parab_clicked_point_y):
         cv2.line(image, (parab_first_point[0], round(0.5 * (parab_first_point[1] + parab_second_point[1]))), vertex,
                  (255, 255, 255), 2)
         # Draw Parabola
-        cv2.polylines(image, [parab_pts], False, (255, 0, 0), 3)
+        cv2.polylines(image, [parab_pts], False, (255, 0, 0), 2)
         cv2.imshow("Assignment 1", image)
         return vertex
     else:
@@ -248,7 +149,7 @@ def transformation(img):
 
     for y in range(top_left_corner[0][1], bottom_right_corner[0][1]):
         # parabola x value in row y = > parabola(y)=x
-        parab_x = poly(y)
+        parab_x = parabola_func(y)
         relative_left_parab_x = parab_x - top_left_corner[0][0]
         relative_right_parab_x = parab_x - rect_half_x
         for x in range(top_left_corner[0][0], bottom_right_corner[0][0]):
@@ -265,22 +166,21 @@ def transformation(img):
                 x_scale = 1 - (relative_x / rect_half_width)
                 delta = round((rect_half_width - relative_right_parab_x) * (x_scale))
                 new_image[y - col, bottom_right_corner[0][0] - delta - row] = img[y, x]
-                # j=bottom_right_corner[0][0] - (rect_half_width - relative_right_parab_x) * (1 - ((x - rect_half_x) / rect_half_width))
-
-    cv2.imshow("Assignment 1", new_image)
-    cv2.waitKey(0)
+    return new_image
 
 
 def inverse_transformation(img):
     global top_left_corner, bottom_right_corner
     width, height = img.shape[:2]
-    scaled_image = np.zeros((width, height), image.dtype)
+    scaled_image_nn = np.zeros((width, height), image.dtype)
+    scaled_image_b = np.zeros((width, height), image.dtype)
+    scaled_image_c = np.zeros((width, height), image.dtype)
     rect_half_width = 0.5 * (bottom_right_corner[0][0] - top_left_corner[0][0])
     rect_half_x = (bottom_right_corner[0][0] + top_left_corner[0][0]) / 2
 
     for j in range(height):
         for i in range(width):
-            parab_x = poly(i)
+            parab_x = parabola_func(i)
             relative_left_parab_x = parab_x - top_left_corner[0][0]
             relative_right_parab_x = parab_x - rect_half_x
             # if the pixel in rect range copmute
@@ -293,27 +193,27 @@ def inverse_transformation(img):
                     x = (((j - top_left_corner[0][0]) / relative_left_parab_x) * rect_half_width) + top_left_corner[0][
                         0]
                     y = i
-                    scaled_image[i, j] = Cubic_Interpolation(img, y, x)
+                    scaled_image_nn[i, j] = nearest_neighbor_interpolation(img, y, x)
+                    scaled_image_b[i, j] = bilinear_interpolation(img, y, x)
+                    scaled_image_c[i, j] = cubic_interpolation(img, y, x)
                 # x vals from rect medial line
                 else:
                     x = ((((-j + bottom_right_corner[0][0]) / (
                             rect_half_width - relative_right_parab_x)) - 1) * rect_half_width * (-1)) + rect_half_x
                     y = i
-                    scaled_image[i, j] = Cubic_Interpolation(img, y, x)
+                    scaled_image_nn[i, j] = nearest_neighbor_interpolation(img, y, x)
+                    scaled_image_b[i, j] = bilinear_interpolation(img, y, x)
+                    scaled_image_c[i, j] = cubic_interpolation(img, y, x)
 
             # if the pixel is not in rect range take the value from original image
             else:
-                scaled_image[i, j] = img[i, j]
-    cv2.imshow("Bilinear Interpolation", scaled_image)
+                scaled_image_nn[i, j] = img[i, j]
+                scaled_image_b[i, j] = img[i, j]
+                scaled_image_c[i, j] = img[i, j]
+    cv2.imshow("Nearest Neighbor Interpolation", scaled_image_nn)
+    cv2.imshow("Bilinear Interpolation", scaled_image_b)
+    cv2.imshow("Cubic Interpolation", scaled_image_c)
     cv2.waitKey(0)
-
-
-# def deformat():
-#     # nearest_neighbor = inverse_transformation(original_image, interpolation="nearest_neighbor")
-#     bilinear = inverse_transformation(original_image)
-#     # cv2.imshow("Nearest Neighbor Interpolation", nearest_neighbor)
-#     cv2.imshow("Bilinear Interpolation", bilinear)
-#     cv2.waitKey(0)
 
 
 # function which will be called on mouse input
@@ -321,7 +221,7 @@ def click_handler(action, x, y, flags, *userdata):
     # Referencing global variables
     global top_left_corner, bottom_right_corner, \
         top_left_corner_button, bottom_right_corner_button, \
-        parab_point_button
+        parab_point_button, vertex, original_image
 
     # Mark the top left corner when left mouse button is pressed
     if action == cv2.EVENT_LBUTTONDOWN and not top_left_corner_button:
@@ -337,8 +237,6 @@ def click_handler(action, x, y, flags, *userdata):
     elif action == cv2.EVENT_LBUTTONUP and bottom_right_corner_button and (not parab_point_button):
         parab_point_button = True
         vertex = draw_parabola(x, y)
-        # if vertex is not None:
-        #     deformat()
 
 
 def load_image():
@@ -350,14 +248,8 @@ def load_image():
 def display_window():
     global image
     cv2.imshow("Assignment 1", image)
-    # setting mouse handler for the image
-    # and calling the click_event() function
     cv2.setMouseCallback('Assignment 1', click_handler)
-    # First Parameter is for holding screen for specified milliseconds
-    # It should be positive integer. If 0 pass an parameter, then it will
-    # hold the screen until user close it.
     cv2.waitKey(0)
-    # It is for removing/deleting created GUI window from screen and memory
     cv2.destroyAllWindows()
 
 
@@ -367,6 +259,7 @@ if __name__ == '__main__':
     if os.path.exists(relative_path):
         load_image()
         display_window()
-        inverse_transformation(original_image)
+        if vertex is not None:
+            inverse_transformation(original_image)
     else:
         print("False pathname")
