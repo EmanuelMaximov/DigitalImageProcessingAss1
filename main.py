@@ -350,28 +350,37 @@ def compute_cropped_area(vertex):
 #     cv2.imshow("Assignment 2", scaled_image)
 #     cv2.waitKey(0)
 
-def new_deformat(img):
+
+# top_left_corner_x_val=top_left_corner[0][0]
+# top_left_corner_y_val=top_left_corner[0][1]
+# bottom_right_corner_x_val=bottom_right_corner[0][0]
+# bottom_right_corner_y_val=bottom_right_corner[0][1]
+def transformation(img):
     col, row = img.shape[:2]
-    scaled_image = np.zeros((col, row), image.dtype)
+    new_image = np.zeros((col, row), image.dtype)
     rect_half_width = 0.5 * (bottom_right_corner[0][0] - top_left_corner[0][0])
     rect_half_x = round((bottom_right_corner[0][0] + top_left_corner[0][0]) / 2)
 
     for y in range(top_left_corner[0][1], bottom_right_corner[0][1]):
+        # parabola x value in row y = > parabola(y)=x
         parab_x = poly(y)
         relative_left_parab_x = parab_x - top_left_corner[0][0]
         relative_right_parab_x = parab_x - rect_half_x
         for x in range(top_left_corner[0][0], bottom_right_corner[0][0]):
             if x <= rect_half_x:
                 relative_x = x - top_left_corner[0][0]
+                # linear scale using x value
+                # if x==  top_left_corner[0][0] then scale=0 (0%)
+                # if x==        rect_half_width then scale=1 (100%)
                 x_scale = relative_x / rect_half_width
                 delta = round(relative_left_parab_x * x_scale)
-                scaled_image[y - col, top_left_corner[0][0] + delta - row] = img[y, x]
+                new_image[y - col, top_left_corner[0][0] + delta - row] = img[y, x]
             else:
                 relative_x = (x - rect_half_x)
                 x_scale = 1 - (relative_x / rect_half_width)
                 delta = round((rect_half_width - relative_right_parab_x) * (x_scale))
-                scaled_image[y - col, bottom_right_corner[0][0] - delta - row] = img[y, x]
-    cv2.imshow("Assignment 2", scaled_image)
+                new_image[y - col, bottom_right_corner[0][0] - delta - row] = img[y, x]
+    cv2.imshow("Assignment 1", new_image)
     cv2.waitKey(0)
 
 
@@ -380,7 +389,7 @@ def inverse_transformation(img):
     width, height = img.shape[:2]
     scaled_image = np.zeros((width, height), image.dtype)
     rect_half_width = 0.5 * (bottom_right_corner[0][0] - top_left_corner[0][0])
-    rect_half_x = round((bottom_right_corner[0][0] + top_left_corner[0][0]) / 2)
+    rect_half_x = (bottom_right_corner[0][0] + top_left_corner[0][0]) / 2
 
     # print("top left pixel: ", top_left_corner[0])
     # print("rect half x: ", rect_half_x)
@@ -394,22 +403,23 @@ def inverse_transformation(img):
                     and top_left_corner[0][1] <= i <= bottom_right_corner[0][1]:
                 # x vals up to rect medial line
                 if j <= parab_x:
+
+                    # compute (y,x) pixel from original image
                     x = (((j - top_left_corner[0][0]) / relative_left_parab_x) * rect_half_width) + top_left_corner[0][
                         0]
                     y = i
-                    print("(i,j): ", (i, j), "=> (y,x): ", (y, x))
                     scaled_image[i, j] = bilinear_pixel_val(img, y, x)
-                    # scaled_image[i, j] = 0XAA
                 # x vals from rect medial line
                 else:
-                    y = None
-                    x = None
-                    # scaled_image[i, j]=bilinear_pixel(img,y,x)
+                    x = ((((-j + bottom_right_corner[0][0]) / (
+                            rect_half_width - relative_right_parab_x)) - 1) * rect_half_width * (-1)) + rect_half_x
+                    y = i
+                    scaled_image[i, j] = bilinear_pixel_val(img, y, x)
 
             # if the pixel is not in rect range take the value from original image
             else:
                 scaled_image[i, j] = img[i, j]
-    cv2.imshow("Assignment 2", scaled_image)
+    cv2.imshow("Assignment 1", scaled_image)
     cv2.waitKey(0)
 
 
