@@ -6,46 +6,49 @@ import sys
 
 # Read Images
 image, original_image = [], []
-
-relative_path = "image200.jpg"
+# default
+relative_path = "image.jpg"
 
 # Lists to store the bounding box coordinates
 top_left_corner, bottom_right_corner = [], []
 top_left_corner_button, bottom_right_corner_button, parab_point_button = False, False, False
 parab_first_point, parab_second_point = (), ()
 parabola_func = None
-vertex = None
+parabola_vertex = None
 
 
 # ------------------------------Cubic Interpolation------------------------------
-def cubic_equation_solver(d, a):
-    d = abs(d)
-    if 0.0 <= d <= 1.0:
-        score = (a + 2.0) * pow(d, 3.0) - ((a + 3.0) * pow(d, 2.0)) + 1.0
-        return score
-    elif 1 < d <= 2:
-        score = a * pow(d, 3.0) - 5.0 * a * pow(d, 2.0) + 8.0 * a * d - 4.0 * a
-        return score
+def Ca(d):
+    # Note: a=-0.5 in these equations
+    x = abs(d)
+    if x <= 1.0:
+        return 1.5 * pow(x, 3) - 2.5 * pow(x, 2) + 1
+    elif 1 < x <= 2:
+        return -0.5 * pow(x, 3) + 2.5 * pow(x, 2) - 4 * x + 2
     else:
-        return 0.0
+        return 0
 
 
 def cubic_interpolation(img, x, y):
-    newX = x
-    newY = y
-    dx = abs(newX - round(newX))
-    dy = abs(newY - round(newY))
+    new_x = x
+    new_y = y
+    dx = abs(new_x - round(new_x))
+    dy = abs(new_y - round(new_y))
     sum_value = 0
-    for c_neighbor in range(-1, 3):
-        for r_neighbor in range(-1, 3):
-            CaX = cubic_equation_solver(r_neighbor + dx, -0.5)
-            CaY = cubic_equation_solver(c_neighbor + dy, -0.5)
-            sum_value = sum_value + img[(round(newX) + r_neighbor, c_neighbor + round(newY))] * CaX * CaY
 
-    if sum_value > 255:
-        sum_value = 255
-    elif sum_value < 0:
-        sum_value = 0
+    if round(new_x) > new_x:
+        new_x = new_x - 1
+
+    for j in range(-1, 3):
+        for i in range(-1, 3):
+            CaX = Ca(dx + i)
+            CaY = Ca(dy + j)
+            #                       f(x+i,y+j)*   Ca(dx+i)*   Ca(dy+j)
+            sum_value = sum_value + img[(round(new_x) + i, round(new_y) + j)] * CaX * CaY
+
+    # if there is an overflow because of float arithmetics use other interpolation
+    if sum_value > 255 or sum_value < 0:
+        sum_value = bilinear_interpolation(img, x, y)
     return sum_value
 
 
@@ -92,8 +95,7 @@ def bilinear_interpolation(original_img, x, y):
 def draw_rectangle():
     global parab_first_point, parab_second_point
     # Draw the rectangle
-    cv2.rectangle(image, top_left_corner[0], bottom_right_corner[0], (255, 255, 255), 2, 8)
-    cv2.rectangle(original_image, top_left_corner[0], bottom_right_corner[0], (255, 255, 255), 2, 8)
+    cv2.rectangle(image, top_left_corner[0], bottom_right_corner[0], (255, 255, 255), 1, 8)
 
     # Compute Medial Line
     distance = bottom_right_corner[0][0] - top_left_corner[0][0]
@@ -102,13 +104,13 @@ def draw_rectangle():
         int(item) for item in (bottom_right_corner[0][0] - (distance / 2), bottom_right_corner[0][1]))
 
     # Draw Medial line
-    cv2.line(image, parab_first_point, parab_second_point, (0, 0, 0), 2)
-    cv2.line(original_image, parab_first_point, parab_second_point, (0, 0, 0), 2)
+    cv2.line(image, parab_first_point, parab_second_point, (255, 255, 255), 1)
+    cv2.line(original_image, parab_first_point, parab_second_point, (255, 255, 255), 1)
     cv2.imshow("Assignment 1", image)
 
 
 def draw_parabola(parab_clicked_point_x, parab_clicked_point_y):
-    global parab_point_button, parabola_func, parab_first_point, parab_second_point
+    global parab_point_button, parabola_func, parab_first_point, parab_second_point, parabola_vertex
     pts = np.array([[parab_first_point[0], parab_first_point[1]],
                     [parab_clicked_point_x, parab_clicked_point_y],
                     [parab_second_point[0], parab_second_point[1]]], np.int32)
@@ -126,29 +128,29 @@ def draw_parabola(parab_clicked_point_x, parab_clicked_point_y):
     a = coeffs[0]
     b = coeffs[1]
     c = coeffs[2]
-    vertex = (round((((4 * a * c) - (b * b)) / (4 * a))), round((-b / (2 * a))))
+    parabola_vertex = (round((((4 * a * c) - (b * b)) / (4 * a))), round((-b / (2 * a))))
     # Ensure parabola won't be drawn outside the rectangle
-    if top_left_corner[0][0] < vertex[0] < bottom_right_corner[0][0]:
+    if top_left_corner[0][0] < parabola_vertex[0] < bottom_right_corner[0][0]:
         # Draw horizontal line through parabola vertex for reference
-        cv2.line(image, (parab_first_point[0], round(0.5 * (parab_first_point[1] + parab_second_point[1]))), vertex,
-                 (255, 255, 255), 2)
+        cv2.line(image, (parab_first_point[0], round(0.5 * (parab_first_point[1] + parab_second_point[1]))),
+                 parabola_vertex,
+                 (255, 255, 255), 1)
         # Draw Parabola
-        cv2.polylines(image, [parab_pts], False, (255, 0, 0), 2)
+        cv2.polylines(image, [parab_pts], False, (255, 0, 0), 1)
         cv2.imshow("Assignment 1", image)
-        return vertex
+        print("Close the window in order to proceed the calculations")
     else:
+        parabola_vertex = None
         parab_point_button = False
-        return None
 
 
-def transformation(img):
+def T(img):
     col, row = img.shape[:2]
     new_image = np.zeros((col, row), image.dtype)
     rect_half_width = 0.5 * (bottom_right_corner[0][0] - top_left_corner[0][0])
     rect_half_x = round((bottom_right_corner[0][0] + top_left_corner[0][0]) / 2)
 
     for y in range(top_left_corner[0][1], bottom_right_corner[0][1]):
-        # parabola x value in row y = > parabola(y)=x
         parab_x = parabola_func(y)
         relative_left_parab_x = parab_x - top_left_corner[0][0]
         relative_right_parab_x = parab_x - rect_half_x
@@ -156,8 +158,6 @@ def transformation(img):
             if x <= rect_half_x:
                 relative_x = x - top_left_corner[0][0]
                 # linear scale using x value
-                # if x==  top_left_corner[0][0] then scale=0 (0%)
-                # if x==        rect_half_width then scale=1 (100%)
                 x_scale = relative_x / rect_half_width
                 delta = round(relative_left_parab_x * x_scale)
                 new_image[y - col, top_left_corner[0][0] + delta - row] = img[y, x]
@@ -169,9 +169,11 @@ def transformation(img):
     return new_image
 
 
-def inverse_transformation(img):
+def inverse_T(img):
     global top_left_corner, bottom_right_corner
     width, height = img.shape[:2]
+
+    # Create 3 new padded Images
     scaled_image_nn = np.zeros((width, height), image.dtype)
     scaled_image_b = np.zeros((width, height), image.dtype)
     scaled_image_c = np.zeros((width, height), image.dtype)
@@ -186,7 +188,7 @@ def inverse_transformation(img):
             # if the pixel in rect range copmute
             if top_left_corner[0][0] <= j <= bottom_right_corner[0][0] \
                     and top_left_corner[0][1] <= i <= bottom_right_corner[0][1]:
-                # x vals up to rect medial line
+                # x vals up to parabola line
                 if j <= parab_x:
 
                     # compute (y,x) pixel from original image
@@ -196,7 +198,7 @@ def inverse_transformation(img):
                     scaled_image_nn[i, j] = nearest_neighbor_interpolation(img, y, x)
                     scaled_image_b[i, j] = bilinear_interpolation(img, y, x)
                     scaled_image_c[i, j] = cubic_interpolation(img, y, x)
-                # x vals from rect medial line
+                # x vals from parabola line
                 else:
                     x = ((((-j + bottom_right_corner[0][0]) / (
                             rect_half_width - relative_right_parab_x)) - 1) * rect_half_width * (-1)) + rect_half_x
@@ -210,6 +212,11 @@ def inverse_transformation(img):
                 scaled_image_nn[i, j] = img[i, j]
                 scaled_image_b[i, j] = img[i, j]
                 scaled_image_c[i, j] = img[i, j]
+
+    # Show formatted images
+    cv2.rectangle(scaled_image_nn, top_left_corner[0], bottom_right_corner[0], (255, 255, 255), 1, 8)
+    cv2.rectangle(scaled_image_b, top_left_corner[0], bottom_right_corner[0], (255, 255, 255), 1, 8)
+    cv2.rectangle(scaled_image_c, top_left_corner[0], bottom_right_corner[0], (255, 255, 255), 1, 8)
     cv2.imshow("Nearest Neighbor Interpolation", scaled_image_nn)
     cv2.imshow("Bilinear Interpolation", scaled_image_b)
     cv2.imshow("Cubic Interpolation", scaled_image_c)
@@ -221,7 +228,7 @@ def click_handler(action, x, y, flags, *userdata):
     # Referencing global variables
     global top_left_corner, bottom_right_corner, \
         top_left_corner_button, bottom_right_corner_button, \
-        parab_point_button, vertex, original_image
+        parab_point_button, original_image
 
     # Mark the top left corner when left mouse button is pressed
     if action == cv2.EVENT_LBUTTONDOWN and not top_left_corner_button:
@@ -236,11 +243,11 @@ def click_handler(action, x, y, flags, *userdata):
 
     elif action == cv2.EVENT_LBUTTONUP and bottom_right_corner_button and (not parab_point_button):
         parab_point_button = True
-        vertex = draw_parabola(x, y)
+        draw_parabola(x, y)
 
 
 def load_image():
-    global image, relative_path, original_image, checking_image
+    global image, relative_path, original_image
     image = cv2.imread(relative_path, cv2.IMREAD_GRAYSCALE)
     original_image = cv2.imread(relative_path, cv2.IMREAD_GRAYSCALE)
 
@@ -254,12 +261,14 @@ def display_window():
 
 
 if __name__ == '__main__':
+    relative_path = sys.argv[1]
     # check if the file exists
-    # if os.path.exists(sys.argv):
     if os.path.exists(relative_path):
         load_image()
         display_window()
-        if vertex is not None:
-            inverse_transformation(original_image)
+        if parabola_vertex is not None:
+            print("Wait... Calculating...")
+            inverse_T(original_image)
+            print("Done!")
     else:
         print("False pathname")
