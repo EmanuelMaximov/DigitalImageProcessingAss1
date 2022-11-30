@@ -10,6 +10,6 @@ ID's: 316442862 & 316010180*
 ## How to run the code:
 1. In terminal: 
 ``` python main.py "Image.jpg" ```
-3. click and drug the mouse to create a rectangle
+3. click and drug the mouse to create a rectangle from left to right
 4. click in the rectangle area to create side parabola that passes through the point you have clicked
 5. close the current window in order to start the calculations
