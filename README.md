@@ -12,7 +12,7 @@
 4. click in the rectangle area to create side parabola that passes through the point you have clicked
 5. close the current window in order to start the calculations
 
-Example
+##Example
 Input Image
 
 ![Source Image URL](image.jpg?raw=true)
