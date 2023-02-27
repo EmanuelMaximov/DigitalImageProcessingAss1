@@ -13,4 +13,12 @@
 5. close the current window in order to start the calculations
 
 Example
+Input Image
 
+![Source Image URL](image.jpg?raw=true)
+
+After choosing the area to strech in parabolic shape
+![Clicked Image URL](Clicked.png?raw=true)
+
+Output
+![Output Image URL](output.png?raw=true)
